@@ -68,6 +68,8 @@ protected:
 
 	void SprintStop();
 
+	void LockOn();
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -83,5 +85,6 @@ public:
 
 private:
 	bool bIsSprint;
+	bool bIsLockOn;
 };
 

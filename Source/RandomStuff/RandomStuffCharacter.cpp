@@ -9,6 +9,9 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Component/HealthComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Missle.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ARandomStuffCharacter
@@ -51,6 +54,7 @@ ARandomStuffCharacter::ARandomStuffCharacter()
 	DefaultStamina = 100;
 	CurrentStamina = DefaultStamina;
 	bIsSprint = false;
+	bIsLockOn = false;
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 }
@@ -73,6 +77,20 @@ void ARandomStuffCharacter::Tick(float DeltaSeconds)
 		{
 			CurrentStamina = FMath::Clamp(CurrentStamina + 1.0f, 0.0f, DefaultStamina);
 		}
+	}
+
+	if (bIsLockOn)
+	{
+		TArray<AActor*> FoundActors;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMissle::StaticClass(), FoundActors);
+		if (FoundActors.Num())
+		{
+			FVector TargetLocation = FoundActors[0]->GetActorLocation();
+			const FRotator FocusRotation = UKismetMathLibrary::FindLookAtRotation(FollowCamera->GetComponentLocation(), TargetLocation);
+			const FRotator InterpRotation = FMath::RInterpTo(Controller->GetControlRotation(), FocusRotation, DeltaSeconds, 1.0f);
+			Controller->SetControlRotation(InterpRotation);
+		}
+
 	}
 }
 
@@ -100,6 +118,7 @@ void ARandomStuffCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ARandomStuffCharacter::SprintStart);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ARandomStuffCharacter::SprintStop);
+	PlayerInputComponent->BindAction("LockOn", IE_Pressed, this, &ARandomStuffCharacter::LockOn);
 }
 
 
@@ -152,4 +171,9 @@ void ARandomStuffCharacter::SprintStart()
 void ARandomStuffCharacter::SprintStop()
 {
 	bIsSprint = false;
+}
+
+void ARandomStuffCharacter::LockOn()
+{
+	bIsLockOn = !bIsLockOn;
 }
